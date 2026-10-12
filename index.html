@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0b0f">
+  <title>Pitwall — Sigue la Fórmula 1</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0b0f;
+      --panel: #111319;
+      --panel-soft: #171920;
+      --line: #272a32;
+      --muted: #9599a5;
+      --text: #f5f5f6;
+      --red: #f04444;
+      --green: #9de2b1;
+      --yellow: #f0c66b;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 90% -20%, rgba(240, 68, 68, .12), transparent 32rem),
+        var(--bg);
+      color: var(--text);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    .shell { width: min(1320px, calc(100% - 48px)); margin: auto; }
+    .topbar {
+      height: 76px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 850; letter-spacing: .08em; }
+    .brand-mark { width: 31px; height: 27px; background: var(--red); clip-path: polygon(0 0,100% 0,70% 100%,0 100%); position: relative; }
+    .brand-mark::after { content: ""; position: absolute; width: 13px; height: 4px; background: #fff; top: 11px; left: 7px; transform: skew(-25deg); }
+    .brand small { display: block; margin-top: -4px; color: var(--muted); font-size: 9px; letter-spacing: .2em; }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .season-select, .search-wrap, .icon-btn, .tab, .filter-btn {
+      border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
+    }
+    .season-select { color: #ddd; padding: 9px 12px; }
+    .live-note { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .dot { height: 7px; width: 7px; background: var(--yellow); border-radius: 50%; box-shadow: 0 0 10px rgba(240,198,107,.55); }
+    .hero { padding: 38px 0 26px; display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+    .eyebrow { color: var(--red); font-weight: 750; text-transform: uppercase; font-size: 11px; letter-spacing: .16em; }
+    h1 { font-size: clamp(30px, 4vw, 43px); line-height: 1.1; letter-spacing: -.04em; margin: 8px 0 10px; }
+    .hero p { margin: 0; color: var(--muted); max-width: 570px; }
+    .hero-stats { display: flex; gap: 10px; }
+    .stat { border-left: 1px solid var(--line); padding: 2px 0 2px 19px; min-width: 100px; }
+    .stat strong { display: block; font-size: 21px; letter-spacing: -.03em; }
+    .stat span { color: var(--muted); font-size: 11px; }
+    .notice { padding: 10px 13px; border: 1px solid rgba(240,198,107,.2); background: rgba(240,198,107,.06); color: #d9c99f; border-radius: 9px; font-size: 12px; margin-bottom: 22px; }
+    .notice b { color: var(--yellow); }
+    .notice a, .standings-foot a { color: #ff9696; text-decoration: none; }
+    .notice a:hover, .standings-foot a:hover { text-decoration: underline; }
+    .tabs-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
+    .tabs { display: flex; gap: 6px; }
+    .tab { color: var(--muted); padding: 9px 14px; cursor: pointer; transition: .18s; }
+    .tab:hover { color: white; border-color: #454955; }
+    .tab.active { background: var(--red); color: white; border-color: var(--red); font-weight: 700; }
+    .search-wrap { display: flex; gap: 8px; align-items: center; padding: 0 11px; width: min(270px, 45vw); color: var(--muted); }
+    .search-wrap input { width: 100%; background: transparent; color: white; border: 0; outline: 0; padding: 10px 0; }
+    .search-wrap input::placeholder { color: #777b86; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .9fr); gap: 18px; align-items: start; }
+    .panel { background: linear-gradient(145deg, rgba(255,255,255,.025), transparent 50%), var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+    .panel-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .panel-title { margin: 0; font-size: 15px; font-weight: 750; }
+    .panel-subtitle { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .text-btn { background: none; border: 0; color: #f47b7b; padding: 5px 0; font-size: 12px; cursor: pointer; }
+    .text-btn:hover { color: white; }
+    .next-race { margin: 18px; padding: 20px; border-radius: 14px; min-height: 210px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(110deg, rgba(10,11,15,.97) 8%, rgba(10,11,15,.76) 60%, rgba(10,11,15,.45)), radial-gradient(ellipse at 90% 15%, #612025, transparent 50%), #252126; }
+    .next-race::after { content: "F1"; position: absolute; right: 16px; top: 8px; color: rgba(255,255,255,.06); font-size: 125px; font-weight: 950; font-style: italic; line-height: 1; pointer-events: none; }
+    .race-kicker { color: #ff8585; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .14em; position: relative; z-index: 1; }
+    .next-race h3 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -.035em; margin: 4px 0; position: relative; z-index: 1; }
+    .race-meta { color: #c4c4ca; display: flex; gap: 17px; font-size: 12px; position: relative; z-index: 1; }
+    .race-bottom { display: flex; justify-content: space-between; align-items: end; gap: 12px; position: relative; z-index: 1; }
+    .circuit { color: var(--muted); font-size: 12px; }
+    .primary-btn { background: white; color: #101115; border: 0; border-radius: 9px; padding: 10px 13px; font-weight: 750; cursor: pointer; font-size: 12px; transition: transform .15s, background .15s; }
+    .primary-btn:hover { transform: translateY(-1px); background: #ffdada; }
+    .race-list { padding: 0 18px 16px; }
+    .race-row { padding: 12px 2px; display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; }
+    .race-row:last-child { border-bottom: 0; }
+    .race-row:hover .race-name { color: #ff8b8b; }
+    .round { height: 34px; width: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--panel-soft); color: #aeb1bb; font-size: 11px; font-weight: 750; }
+    .race-name { font-size: 13px; font-weight: 700; transition: color .15s; }
+    .race-location { font-size: 11px; color: var(--muted); }
+    .race-result { display: inline-block; margin-top: 3px; color: var(--green); font-size: 10px; }
+    .race-date { color: #d1d1d5; font-size: 11px; text-align: right; white-space: nowrap; }
+    .status { display: inline-block; font-size: 9px; color: var(--green); background: rgba(157,226,177,.09); border-radius: 20px; padding: 3px 7px; margin-top: 4px; }
+    .status.upcoming { color: var(--yellow); background: rgba(240,198,107,.09); }
+    .status.title-status { color: #f6a5ff; background: rgba(246,165,255,.1); }
+    .standings { padding: 0 18px 12px; }
+    .standing-row { display: grid; grid-template-columns: 27px 1fr 42px; gap: 10px; align-items: center; padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .standing-row:last-child { border-bottom: 0; }
+    .position { color: #858995; font-size: 12px; font-weight: 750; }
+    .driver { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .driver-bar { width: 3px; height: 29px; border-radius: 5px; background: var(--team-color, #aaa); }
+    .driver-name { font-size: 12px; font-weight: 700; }
+    .team-name { font-size: 10px; color: var(--muted); }
+    .points { text-align: right; font-weight: 750; font-size: 12px; }
+    .standings-foot { padding: 12px 20px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    .filters { display: flex; gap: 6px; }
+    .filter-btn { font-size: 10px; padding: 6px 9px; color: var(--muted); cursor: pointer; }
+    .filter-btn.active { color: white; border-color: #696d78; background: #252831; }
+    .calendar-view { display: none; }
+    .calendar-view .panel { grid-column: 1 / -1; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(2, 1fr); padding: 8px 18px 18px; gap: 0 22px; }
+    .calendar-grid .race-row { min-height: 62px; }
+    .empty { padding: 28px 12px; text-align: center; color: var(--muted); font-size: 13px; }
+    footer { display: flex; justify-content: space-between; gap: 12px; color: #6f737e; font-size: 10px; padding: 22px 0 28px; }
+    dialog { width: min(460px, calc(100% - 32px)); border: 1px solid #393c46; border-radius: 15px; background: #14161c; color: white; padding: 0; box-shadow: 0 20px 90px #000b; }
+    dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(4px); }
+    .dialog-inner { padding: 22px; }
+    .dialog-close { float: right; border: 1px solid var(--line); background: var(--panel-soft); border-radius: 8px; cursor: pointer; padding: 4px 9px; }
+    .dialog-inner h2 { margin: 11px 0 5px; font-size: 25px; }
+    .dialog-inner p { color: var(--muted); margin: 6px 0; }
+    .dialog-info { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .dialog-info span { display: block; color: var(--muted); font-size: 11px; }
+    .dialog-info strong { display: block; font-size: 13px; margin-top: 3px; }
+    .scenario-box { border: 1px solid rgba(240,68,68,.25); background: rgba(240,68,68,.06); border-radius: 10px; padding: 13px; margin-top: 16px; }
+    .scenario-box h3 { font-size: 13px; margin: 0 0 7px; }
+    .scenario-box p { font-size: 11px; margin: 5px 0; color: #d6d6da; }
+    .championship-note { color: var(--muted); font-size: 11px; padding: 0 20px 16px; }
+    .subtabs { display: flex; gap: 7px; }
+    .subtab { border: 1px solid var(--line); background: var(--panel-soft); color: var(--muted); border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 11px; }
+    .subtab.active { color: white; border-color: var(--red); background: rgba(240,68,68,.16); }
+    .scenario-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px 18px 18px; }
+    .scenario-card { background: var(--panel-soft); border: 1px solid var(--line); border-radius: 11px; padding: 13px; }
+    .scenario-card h3 { margin: 0 0 4px; font-size: 13px; }
+    .scenario-card p { margin: 5px 0 0; color: #b9bbc3; font-size: 11px; }
+    .scenario-card strong { color: white; }
+    .team-row { display: grid; grid-template-columns: 27px 1fr 54px; gap: 10px; align-items: center; padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .team-row:last-child { border-bottom: 0; }
+    .team-points { text-align: right; font-size: 12px; font-weight: 750; }
+    [hidden] { display: none !important; }
+    @media (max-width: 850px) {
+      .grid { grid-template-columns: minmax(0, 1fr) minmax(260px, .8fr); }
+      .hero { align-items: start; flex-direction: column; }
+    }
+    @media (max-width: 650px) {
+      .shell { width: min(100% - 28px, 520px); }
+      .topbar { height: 64px; }
+      .live-note { display: none; }
+      .season-select { padding: 7px 9px; font-size: 12px; }
+      .hero { padding: 29px 0 19px; }
+      .hero-stats { width: 100%; }
+      .stat { flex: 1; padding-left: 12px; min-width: 0; }
+      .tabs-row { align-items: stretch; flex-direction: column; }
+      .tabs { overflow-x: auto; }
+      .tab { white-space: nowrap; flex: 1; padding: 9px 10px; }
+      .search-wrap { width: 100%; }
+      .grid { grid-template-columns: 1fr; }
+      .calendar-grid { grid-template-columns: 1fr; }
+      .scenario-grid { grid-template-columns: 1fr; padding: 12px; }
+      .next-race { min-height: 195px; margin: 12px; padding: 17px; }
+      .race-list { padding: 0 13px 12px; }
+      .panel-head { padding: 15px; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell topbar">
+    <div class="brand" aria-label="Pitwall, seguimiento de Fórmula 1">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>PITWALL<small>RACE CENTER</small></span>
+    </div>
+    <div class="top-actions">
+      <label class="live-note"><span class="dot"></span> Panel interactivo</label>
+      <span class="season-select" aria-label="Temporada actual">Temporada 2026</span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Tu paddock, de un vistazo</div>
+        <h1>La temporada se vive aquí.</h1>
+        <p>Calendario, pilotos y posiciones: todo lo que necesitas para seguir cada Gran Premio.</p>
+      </div>
+      <div class="hero-stats" aria-label="Resumen de temporada">
+        <div class="stat"><strong id="race-count">23</strong><span>GRANDES PREMIOS</span></div>
+        <div class="stat"><strong id="driver-count">23</strong><span>PILOTOS</span></div>
+        <div class="stat"><strong id="team-count">11</strong><span>ESCUDERÍAS</span></div>
+      </div>
+    </section>
+
+    <div class="notice"><b>Corte consultado: 12 oct 2026</b> · Datos oficiales de F1, actualizados manualmente para este prototipo (sin sincronización en directo).
+      <a href="https://www.formula1.com/en/racing/2026" target="_blank" rel="noopener noreferrer">Calendario</a> ·
+      <a href="https://www.formula1.com/en/results/2026/races" target="_blank" rel="noopener noreferrer">Resultados</a> ·
+      <a href="https://www.formula1.com/en/results/2026/drivers" target="_blank" rel="noopener noreferrer">Pilotos</a>
+    </div>
+
+    <div class="tabs-row">
+      <nav class="tabs" aria-label="Secciones">
+        <button class="tab active" data-view="overview" aria-pressed="true">Resumen</button>
+        <button class="tab" data-view="calendar" aria-pressed="false">Calendario</button>
+        <button class="tab" data-view="standings" aria-pressed="false">Clasificación</button>
+      </nav>
+      <label class="search-wrap" aria-label="Buscar piloto o Gran Premio">
+        <span aria-hidden="true">⌕</span>
+        <input id="search" type="search" placeholder="Buscar piloto o Gran Premio…" autocomplete="off">
+      </label>
+    </div>
+
+    <section class="grid" id="overview-view">
+      <article class="panel">
+        <div class="panel-head">
+          <div><h2 class="panel-title">Siguiente Gran Premio</h2><div class="panel-subtitle">La próxima cita del calendario oficial</div></div>
+          <span class="race-kicker" id="next-round">Ronda 18</span>
+        </div>
+        <div class="next-race">
+          <div>
+            <div class="race-kicker">Próxima carrera</div>
+            <h3 id="next-name">Gran Premio de Estados Unidos</h3>
+            <div class="race-meta"><span id="next-date">23–25 OCT</span><span id="next-location">Austin, Estados Unidos</span></div>
+          </div>
+          <div class="race-bottom">
+            <span class="circuit" id="next-circuit">Circuit of The Americas</span>
+            <button class="primary-btn" id="next-details" data-race="18">Ver detalles&nbsp; ↗</button>
+          </div>
+        </div>
+        <div class="race-list" id="upcoming-list" aria-label="Próximas carreras"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div><h2 class="panel-title">Campeonato de pilotos</h2><div class="panel-subtitle">Puntos oficiales de la temporada</div></div>
+          <button class="text-btn" data-goto="standings">Ver tabla completa&nbsp; ↗</button>
+        </div>
+        <div class="standings" id="top-standings"></div>
+        <div class="standings-foot">Clasificación publicada por Formula1.com · <a href="https://www.formula1.com/en/results/2026/drivers" target="_blank" rel="noopener noreferrer">Consultar fuente oficial ↗</a></div>
+      </article>
+    </section>
+
+    <section class="calendar-view" id="calendar-view">
+      <article class="panel">
+        <div class="panel-head">
+          <div><h2 class="panel-title">Calendario y resultados</h2><div class="panel-subtitle">Temporada 2026 · selecciona una carrera para ver los detalles</div></div>
+          <div class="filters" aria-label="Filtrar calendario">
+            <button class="filter-btn active" data-filter="all">Todas</button>
+            <button class="filter-btn" data-filter="completed">Finalizadas</button>
+            <button class="filter-btn" data-filter="upcoming">Próximas</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="full-calendar"></div>
+      </article>
+    </section>
+
+    <section class="calendar-view" id="standings-view">
+      <div class="tabs" aria-label="Campeonatos">
+        <button class="subtab active" data-championship="drivers" aria-pressed="true">Pilotos</button>
+        <button class="subtab" data-championship="teams" aria-pressed="false">Constructores</button>
+      </div>
+      <div id="driver-championship">
+        <article class="panel">
+          <div class="panel-head">
+            <div><h2 class="panel-title">Campeonato de pilotos</h2><div class="panel-subtitle">Posiciones y puntos publicados por Formula1.com</div></div>
+            <span class="panel-subtitle">23 pilotos</span>
+          </div>
+          <div class="standings" id="full-standings"></div>
+          <div class="standings-foot">Corte consultado el 12 de octubre de 2026 · <a href="https://www.formula1.com/en/results/2026/drivers" target="_blank" rel="noopener noreferrer">Fuente oficial de pilotos ↗</a></div>
+        </article>
+        <article class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <div><h2 class="panel-title">Opciones matemáticas al título</h2><div class="panel-subtitle">Candidatos, primera fecha posible y un escenario suficiente</div></div>
+          </div>
+          <div class="scenario-grid" id="driver-scenarios"></div>
+          <div class="championship-note">Puntuación: GP 25–18–15–12–10–8–6–4–2–1; Sprint 8–7–6–5–4–3–2–1. El modelo trata las seis fechas restantes como fines de semana sin Sprint. Si alguna es Sprint, el máximo sube a 33 puntos por piloto y 58 por equipo en esa fecha, y el cálculo debe actualizarse. Escenarios calculados desde el corte del 12 de octubre, no predicciones. Para el escenario se asume que el candidato gana cada GP previo y sus rivales no suman allí. Las fechas posteriores deben recalcularse con la clasificación real tras cada carrera. El título solo se considera asegurado con ventaja estricta de puntos; no se usa el desempate por victorias.</div>
+        </article>
+      </div>
+      <div id="team-championship" hidden>
+        <article class="panel">
+          <div class="panel-head">
+            <div><h2 class="panel-title">Campeonato de constructores</h2><div class="panel-subtitle">Puntos oficiales por escudería</div></div>
+            <span class="panel-subtitle">11 equipos</span>
+          </div>
+          <div class="standings" id="full-team-standings"></div>
+          <div class="standings-foot">Corte consultado el 12 de octubre de 2026 · <a href="https://www.formula1.com/en/results/2026/team" target="_blank" rel="noopener noreferrer">Fuente oficial de constructores ↗</a></div>
+        </article>
+        <article class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <div><h2 class="panel-title">Opciones matemáticas al título</h2><div class="panel-subtitle">Máximo de 43 puntos por equipo en cada GP restante (1.º y 2.º)</div></div>
+          </div>
+          <div class="scenario-grid" id="team-scenarios"></div>
+          <div class="championship-note">Puntuación: GP 25–18–15–12–10–8–6–4–2–1; Sprint 8–7–6–5–4–3–2–1. El modelo trata las seis fechas restantes como fines de semana sin Sprint. Si alguna es Sprint, el máximo sube a 33 puntos por piloto y 58 por equipo en esa fecha, y el cálculo debe actualizarse. Escenarios calculados desde el corte del 12 de octubre, no predicciones. Para el escenario se asume que el equipo candidato logra 1.º y 2.º en cada GP previo y sus rivales no suman allí. Las fechas posteriores deben recalcularse con la clasificación real tras cada carrera. El título solo se considera asegurado con ventaja estricta de puntos; no se usa el desempate.</div>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <span>PITWALL · Un panel independiente para fans de la velocidad.</span>
+      <span>Datos atribuidos a Formula1.com; no se actualizan automáticamente.</span>
+    </footer>
+  </main>
+
+  <dialog id="race-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-inner">
+      <button class="dialog-close" id="dialog-close" aria-label="Cerrar">✕</button>
+      <div class="eyebrow" id="dialog-round">RONDA</div>
+      <h2 id="dialog-title"></h2>
+      <p id="dialog-location"></p>
+      <div class="dialog-info">
+        <div><span>Fecha</span><strong id="dialog-date"></strong></div>
+        <div><span>Circuito</span><strong id="dialog-circuit"></strong></div>
+        <div><span>Resultado</span><strong id="dialog-result"></strong></div>
+        <div><span>Escudería / tiempo</span><strong id="dialog-team"></strong></div>
+      </div>
+      <div class="scenario-box" id="race-scenarios"></div>
+    </div>
+  </dialog>
+
+  <script>
+    const races = [
+      { round: 1, name: "Gran Premio de Australia", location: "Melbourne, Australia", date: "6–8 MAR", circuit: "Albert Park Grand Prix Circuit", winner: "George Russell", team: "Mercedes", time: "1:23:06.801" },
+      { round: 2, name: "Gran Premio de China", location: "Shanghai, China", date: "13–15 MAR", circuit: "Shanghai International Circuit", winner: "Kimi Antonelli", team: "Mercedes", time: "1:33:15.607" },
+      { round: 3, name: "Gran Premio de Japón", location: "Suzuka, Japón", date: "27–29 MAR", circuit: "Suzuka International Racing Course", winner: "Kimi Antonelli", team: "Mercedes", time: "1:28:03.403" },
+      { round: 4, name: "Gran Premio de Miami", location: "Miami Gardens, Estados Unidos", date: "1–3 MAY", circuit: "Miami International Autodrome", winner: "Kimi Antonelli", team: "Mercedes", time: "1:33:19.273" },
+      { round: 5, name: "Gran Premio de Canadá", location: "Montreal, Canadá", date: "22–24 MAY", circuit: "Circuit Gilles-Villeneuve", winner: "Kimi Antonelli", team: "Mercedes", time: "1:28:15.758" },
+      { round: 6, name: "Gran Premio de Mónaco", location: "Montecarlo, Mónaco", date: "5–7 JUN", circuit: "Circuit de Monaco", winner: "Kimi Antonelli", team: "Mercedes", time: "2:23:31.243" },
+      { round: 7, name: "Gran Premio de Barcelona-Cataluña", location: "Barcelona, España", date: "12–14 JUN", circuit: "Circuit de Barcelona-Catalunya", winner: "Lewis Hamilton", team: "Ferrari", time: "1:32:28.105" },
+      { round: 8, name: "Gran Premio de Austria", location: "Spielberg, Austria", date: "26–28 JUN", circuit: "Red Bull Ring", winner: "George Russell", team: "Mercedes", time: "1:26:37.979" },
+      { round: 9, name: "Gran Premio de Gran Bretaña", location: "Silverstone, Reino Unido", date: "3–5 JUL", circuit: "Silverstone Circuit", winner: "Charles Leclerc", team: "Ferrari", time: "1:27:11.335" },
+      { round: 10, name: "Gran Premio de Bélgica", location: "Spa-Francorchamps, Bélgica", date: "17–19 JUL", circuit: "Circuit de Spa-Francorchamps", winner: "Kimi Antonelli", team: "Mercedes", time: "1:24:42.479" },
+      { round: 11, name: "Gran Premio de Hungría", location: "Mogyoród, Hungría", date: "24–26 JUL", circuit: "Hungaroring", winner: "Lando Norris", team: "McLaren", time: "1:39:56.180" },
+      { round: 12, name: "Gran Premio de los Países Bajos", location: "Zandvoort, Países Bajos", date: "21–23 AGO", circuit: "Circuit Zandvoort", winner: "Lando Norris", team: "McLaren", time: "2:04:44.859" },
+      { round: 13, name: "Gran Premio de Italia", location: "Monza, Italia", date: "4–6 SEP", circuit: "Autodromo Nazionale Monza", winner: "Kimi Antonelli", team: "Mercedes", time: "1:51:15.281" },
+      { round: 14, name: "Gran Premio de España", location: "Madrid, España", date: "11–13 SEP", circuit: "Madring", winner: "Kimi Antonelli", team: "Mercedes", time: "1:34:23.754" },
+      { round: 15, name: "Gran Premio de Azerbaiyán", location: "Bakú, Azerbaiyán", date: "24–26 SEP", circuit: "Baku City Circuit", winner: "George Russell", team: "Mercedes", time: "1:38:02.143" },
+      { round: 16, name: "Gran Premio de Baréin", location: "Sakhir, Baréin", date: "2–4 OCT", circuit: "Bahrain International Circuit", winner: "Max Verstappen", team: "Red Bull Racing", time: "1:47:14.808" },
+      { round: 17, name: "Gran Premio de Singapur", location: "Singapur", date: "9–11 OCT", circuit: "Marina Bay Street Circuit", winner: "Max Verstappen", team: "Red Bull Racing", time: "1:42:00.785" },
+      { round: 18, name: "Gran Premio de Estados Unidos", location: "Austin, Estados Unidos", date: "23–25 OCT", circuit: "Circuit of The Americas" },
+      { round: 19, name: "Gran Premio de Ciudad de México", location: "Ciudad de México", date: "30 OCT–1 NOV", circuit: "Autódromo Hermanos Rodríguez" },
+      { round: 20, name: "Gran Premio de São Paulo", location: "São Paulo, Brasil", date: "6–8 NOV", circuit: "Autódromo José Carlos Pace" },
+      { round: 21, name: "Gran Premio de Las Vegas", location: "Las Vegas, Estados Unidos", date: "19–21 NOV", circuit: "Las Vegas Strip Circuit" },
+      { round: 22, name: "Gran Premio de Qatar", location: "Lusail, Qatar", date: "27–29 NOV", circuit: "Lusail International Circuit" },
+      { round: 23, name: "Gran Premio de Abu Dabi", location: "Yas Marina, Emiratos Árabes Unidos", date: "4–6 DIC", circuit: "Yas Marina Circuit" }
+    ].map((race) => ({ ...race, completed: Boolean(race.winner) }));
+    const drivers = [
+      { name: "Kimi Antonelli", team: "Mercedes", points: 340, color: "#27f4d2" },
+      { name: "George Russell", team: "Mercedes", points: 238, color: "#27f4d2" },
+      { name: "Lewis Hamilton", team: "Ferrari", points: 229, color: "#e8002d" },
+      { name: "Max Verstappen", team: "Red Bull Racing", points: 221, color: "#3671c6" },
+      { name: "Charles Leclerc", team: "Ferrari", points: 215, color: "#e8002d" },
+      { name: "Lando Norris", team: "McLaren", points: 201, color: "#ff8000" },
+      { name: "Oscar Piastri", team: "McLaren", points: 138, color: "#ff8000" },
+      { name: "Isack Hadjar", team: "Red Bull Racing", points: 97, color: "#3671c6" },
+      { name: "Liam Lawson", team: "Racing Bulls", points: 75, color: "#6692ff" },
+      { name: "Pierre Gasly", team: "Alpine", points: 41, color: "#ff87bc" },
+      { name: "Arvid Lindblad", team: "Racing Bulls", points: 38, color: "#6692ff" },
+      { name: "Franco Colapinto", team: "Alpine", points: 27, color: "#ff87bc" },
+      { name: "Oliver Bearman", team: "Haas F1 Team", points: 23, color: "#b6babd" },
+      { name: "Nico Hülkenberg", team: "Audi", points: 13, color: "#f50537" },
+      { name: "Gabriel Bortoleto", team: "Audi", points: 10, color: "#f50537" },
+      { name: "Esteban Ocon", team: "Haas F1 Team", points: 7, color: "#b6babd" },
+      { name: "Fernando Alonso", team: "Aston Martin", points: 7, color: "#229971" },
+      { name: "Carlos Sainz", team: "Williams", points: 7, color: "#64c4ff" },
+      { name: "Alexander Albon", team: "Williams", points: 5, color: "#64c4ff" },
+      { name: "Yuki Tsunoda", team: "Racing Bulls", points: 1, color: "#6692ff" },
+      { name: "Lance Stroll", team: "Aston Martin", points: 0, color: "#229971" },
+      { name: "Valtteri Bottas", team: "Cadillac", points: 0, color: "#d0d0d0" },
+      { name: "Sergio Pérez", team: "Cadillac", points: 0, color: "#d0d0d0" }
+    ];
+    const constructors = [
+      { name: "Mercedes", points: 578, color: "#27f4d2" },
+      { name: "Ferrari", points: 444, color: "#e8002d" },
+      { name: "McLaren", points: 339, color: "#ff8000" },
+      { name: "Red Bull Racing", points: 332, color: "#3671c6" },
+      { name: "Racing Bulls", points: 100, color: "#6692ff" },
+      { name: "Alpine", points: 68, color: "#ff87bc" },
+      { name: "Haas F1 Team", points: 30, color: "#b6babd" },
+      { name: "Audi", points: 23, color: "#f50537" },
+      { name: "Williams", points: 12, color: "#64c4ff" },
+      { name: "Aston Martin", points: 7, color: "#229971" },
+      { name: "Cadillac", points: 0, color: "#d0d0d0" }
+    ];
+    const DRIVER_MAX_PER_GP = 25;
+    const CONSTRUCTOR_MAX_PER_GP = 43;
+    let calendarFilter = "all";
+    const $ = (selector) => document.querySelector(selector);
+    const esc = (value) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+
+    function renderRaces(target, list) {
+      const query = $("#search").value.trim().toLocaleLowerCase("es");
+      const filtered = list.filter((race) => `${race.name} ${race.location} ${race.circuit} ${race.winner || ""} ${race.team || ""}`.toLocaleLowerCase("es").includes(query));
+      target.innerHTML = filtered.length ? filtered.map((race) => {
+        const scenarios = race.completed ? [] : scenariosAtRace(race.round);
+        return `
+        <div class="race-row" role="button" tabindex="0" data-race="${race.round}" aria-label="Ver ${esc(race.name)}">
+          <span class="round">${String(race.round).padStart(2, "0")}</span>
+          <span><span class="race-name">${esc(race.name)}</span><br><span class="race-location">${esc(race.location)} · ${esc(race.circuit)}</span><br><span class="${race.completed ? "race-result" : "race-location"}">${race.completed ? `Ganador: ${esc(race.winner)} · ${esc(race.team)}` : "Resultado pendiente"}</span>${scenarios.length ? `<br><span class="status title-status">Podrían asegurar título: ${scenarios.map((item) => esc(item.name)).join(", ")}</span>` : ""}</span>
+          <span class="race-date">${esc(race.date)}<br><span class="status ${race.completed ? "" : "upcoming"}">${race.completed ? "Finalizada" : "Próxima"}</span></span>
+        </div>`;
+      }).join("") : '<div class="empty">No encontramos carreras con esa búsqueda.</div>';
+    }
+    function renderDrivers(target, limit = drivers.length) {
+      const query = $("#search").value.trim().toLocaleLowerCase("es");
+      const filtered = drivers.filter((driver) => `${driver.name} ${driver.team}`.toLocaleLowerCase("es").includes(query)).slice(0, limit);
+      target.innerHTML = filtered.length ? filtered.map((driver) => `
+        <div class="standing-row">
+          <span class="position">${String(drivers.indexOf(driver) + 1).padStart(2, "0")}</span>
+          <span class="driver"><i class="driver-bar" style="--team-color:${driver.color}"></i><span><span class="driver-name">${esc(driver.name)}</span><br><span class="team-name">${esc(driver.team)}</span></span></span>
+          <span class="points">${driver.points}<small style="color:#858995;font-size:9px"> PTS</small></span>
+        </div>`).join("") : '<div class="empty">No encontramos pilotos con esa búsqueda.</div>';
+    }
+    function clinchScenarios(standings, maxPerEvent, group) {
+      const remaining = races.filter((race) => !race.completed);
+      return standings.flatMap((candidate) => remaining.flatMap((race, eventIndex) => {
+        const highestRival = Math.max(...standings.filter((entry) => entry !== candidate).map((entry) => entry.points));
+        const eventsAfter = remaining.length - eventIndex - 1;
+        const candidateTotal = candidate.points + (eventIndex + 1) * maxPerEvent;
+        if (candidateTotal <= highestRival + eventsAfter * maxPerEvent) return [];
+        const constraints = standings
+          .filter((entry) => entry !== candidate)
+          .map((rival) => ({ name: rival.name, max: candidateTotal - 1 - rival.points - eventsAfter * maxPerEvent }))
+          .filter((rival) => rival.max < maxPerEvent)
+          .sort((a, b) => a.max - b.max);
+        return [{ name: candidate.name, points: candidate.points, race, eventsToWin: eventIndex + 1, maxPerEvent, candidateTotal, constraints, group }];
+      })).sort((a, b) => b.points - a.points || a.race.round - b.race.round);
+    }
+    function firstClinchScenarios(round) {
+      return [
+        ...clinchScenarios(drivers, DRIVER_MAX_PER_GP, "pilotos"),
+        ...clinchScenarios(constructors, CONSTRUCTOR_MAX_PER_GP, "constructores")
+      ].filter((scenario) => scenario.race.round === Number(round));
+    }
+    function scenariosAtRace(round) {
+      return firstClinchScenarios(round);
+    }
+    function earliestClinchScenarios(standings, maxPerEvent, group) {
+      const scenarios = clinchScenarios(standings, maxPerEvent, group);
+      return standings.flatMap((entry) => {
+        const first = scenarios.find((scenario) => scenario.name === entry.name);
+        return first ? [first] : [];
+      });
+    }
+    function renderScenarios(target, scenarios, label, maxDescription) {
+      target.innerHTML = scenarios.length ? scenarios.map((scenario, index) => `
+        <article class="scenario-card">
+          <h3>${index + 1}. ${esc(scenario.name)}</h3>
+          <p><strong>Primera fecha posible:</strong> R${scenario.race.round} · ${esc(scenario.race.name.replace("Gran Premio de ", ""))} (${esc(scenario.race.date)}).</p>
+          <p><strong>Puntos:</strong> tiene ${scenario.points} ahora; alcanzaría ${scenario.candidateTotal} si obtiene el máximo en cada fecha de la ruta.</p>
+          <p><strong>Ruta suficiente:</strong> sumar ${scenario.maxPerEvent} puntos máximos en cada uno de sus ${scenario.eventsToWin} GP${scenario.eventsToWin === 1 ? "" : "s"} hasta esa fecha${scenario.eventsToWin > 1 ? ", con los rivales sin sumar en los GP previos" : ""}.</p>
+          <p><strong>En esa carrera:</strong> ${scenario.constraints.length ? scenario.constraints.map((rival) => `${esc(rival.name)}: máximo ${rival.max} punto${rival.max === 1 ? "" : "s"}`).join("; ") : "los rivales pueden sumar el máximo de este GP"}.</p>
+          <p>${maxDescription}</p>
+        </article>`).join("") : `<div class="empty">${label}: ningún participante puede asegurar matemáticamente el título con los puntos actuales.</div>`;
+    }
+    function renderTeams(target) {
+      const query = $("#search").value.trim().toLocaleLowerCase("es");
+      const filtered = constructors.filter((team) => team.name.toLocaleLowerCase("es").includes(query));
+      target.innerHTML = filtered.length ? filtered.map((team) => `
+        <div class="team-row">
+          <span class="position">${String(constructors.indexOf(team) + 1).padStart(2, "0")}</span>
+          <span class="driver"><i class="driver-bar" style="--team-color:${team.color}"></i><span class="driver-name">${esc(team.name)}</span></span>
+          <span class="team-points">${team.points}<small style="color:#858995;font-size:9px"> PTS</small></span>
+        </div>`).join("") : '<div class="empty">No encontramos escuderías con esa búsqueda.</div>';
+    }
+    function renderRaceScenarios(race) {
+      const scenarios = scenariosAtRace(race.round);
+      const target = $("#race-scenarios");
+      target.innerHTML = `<h3>Escenarios matemáticos de campeonato</h3>${race.completed
+        ? '<p>Esta fecha ya terminó; consulta la clasificación actual para ver los próximos escenarios de clinch.</p>'
+        : scenarios.length
+          ? scenarios.map((scenario) => `<p><strong>${esc(scenario.name)} (${scenario.group}):</strong> tiene ${scenario.points} puntos y llegaría a ${scenario.candidateTotal} si consigue el máximo en cada fecha de esta ruta (${scenario.eventsToWin} GP). En esta carrera puede sumar hasta ${scenario.maxPerEvent}; ${scenario.constraints.length ? scenario.constraints.map((rival) => `${esc(rival.name)} debe sumar como máximo ${rival.max}`).join("; ") : "sus rivales pueden sumar el máximo sin impedir el título"}. ${scenario.eventsToWin > 1 ? "El escenario supone que los rivales no suman en las fechas previas." : ""}</p>`).join("")
+          : '<p>Con el corte actual y bajo los supuestos indicados, ningún candidato puede asegurar matemáticamente el campeonato en esta fecha.</p>'}
+        <p>Supuesto de cálculo: cada fecha restante se trata como GP sin Sprint, con máximo ${DRIVER_MAX_PER_GP} puntos por piloto y ${CONSTRUCTOR_MAX_PER_GP} por equipo (1.º y 2.º). Si alguna fecha tiene Sprint, el máximo de esa fecha sube a 33 por piloto y 58 por equipo, por lo que estos escenarios deben recalcularse. Se exige quedar por delante por puntos, sin desempate.</p>`;
+    }
+    function render() {
+      const nextRaces = races.filter((race) => !race.completed).slice(0, 3);
+      const nextRace = nextRaces[0];
+      if (nextRace) {
+        $("#next-round").textContent = `Ronda ${nextRace.round}`;
+        $("#next-name").textContent = nextRace.name;
+        $("#next-date").textContent = nextRace.date;
+        $("#next-location").textContent = nextRace.location;
+        $("#next-circuit").textContent = nextRace.circuit;
+        $("#next-details").dataset.race = nextRace.round;
+      }
+      renderRaces($("#upcoming-list"), nextRaces);
+      const calendarRaces = races.filter((race) => calendarFilter === "all" || (calendarFilter === "completed" ? race.completed : !race.completed));
+      renderRaces($("#full-calendar"), calendarRaces);
+      renderDrivers($("#top-standings"), 5);
+      renderDrivers($("#full-standings"));
+      renderTeams($("#full-team-standings"));
+      renderScenarios($("#driver-scenarios"), earliestClinchScenarios(drivers, DRIVER_MAX_PER_GP, "pilotos"), "Pilotos", "Puntuación máxima: victoria en cada GP.");
+      renderScenarios($("#team-scenarios"), earliestClinchScenarios(constructors, CONSTRUCTOR_MAX_PER_GP, "constructores"), "Constructores", "Puntuación máxima: doblete del equipo (1.º y 2.º) en cada GP.");
+      $("#race-count").textContent = races.length;
+      $("#driver-count").textContent = drivers.length;
+      $("#team-count").textContent = new Set(drivers.map((driver) => driver.team)).size;
+    }
+    function showView(name) {
+      $("#overview-view").style.display = name === "overview" ? "grid" : "none";
+      $("#calendar-view").style.display = name === "calendar" ? "block" : "none";
+      $("#standings-view").style.display = name === "standings" ? "block" : "none";
+      document.querySelectorAll(".tab").forEach((tab) => {
+        const selected = tab.dataset.view === name;
+        tab.classList.toggle("active", selected);
+        tab.setAttribute("aria-pressed", String(selected));
+      });
+      render();
+    }
+    function openRace(round) {
+      const race = races.find((item) => item.round === Number(round));
+      if (!race) return;
+      $("#dialog-round").textContent = `RONDA ${String(race.round).padStart(2, "0")} · TEMPORADA 2026`;
+      $("#dialog-title").textContent = race.name;
+      $("#dialog-location").textContent = race.location;
+      $("#dialog-date").textContent = race.date;
+      $("#dialog-circuit").textContent = race.circuit;
+      $("#dialog-result").textContent = race.completed ? race.winner : "Pendiente";
+      $("#dialog-team").textContent = race.completed ? `${race.team} · ${race.time}` : "Pendiente";
+      renderRaceScenarios(race);
+      $("#race-dialog").showModal();
+    }
+    document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => showView(tab.dataset.view)));
+    document.querySelectorAll("[data-goto]").forEach((button) => button.addEventListener("click", () => showView(button.dataset.goto)));
+    document.querySelectorAll(".filter-btn").forEach((button) => button.addEventListener("click", () => {
+      calendarFilter = button.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach((item) => item.classList.toggle("active", item === button));
+      render();
+    }));
+    document.querySelectorAll(".subtab").forEach((button) => button.addEventListener("click", () => {
+      const showTeams = button.dataset.championship === "teams";
+      $("#driver-championship").hidden = showTeams;
+      $("#team-championship").hidden = !showTeams;
+      document.querySelectorAll(".subtab").forEach((tab) => {
+        const selected = tab === button;
+        tab.classList.toggle("active", selected);
+        tab.setAttribute("aria-pressed", String(selected));
+      });
+    }));
+    $("#search").addEventListener("input", render);
+    document.addEventListener("click", (event) => {
+      const raceTarget = event.target.closest("[data-race]");
+      if (raceTarget) openRace(raceTarget.dataset.race);
+    });
+    document.addEventListener("keydown", (event) => {
+      if ((event.key === "Enter" || event.key === " ") && event.target.matches(".race-row")) {
+        event.preventDefault();
+        openRace(event.target.dataset.race);
+      }
+    });
+    $("#dialog-close").addEventListener("click", () => $("#race-dialog").close());
+    $("#race-dialog").addEventListener("click", (event) => {
+      if (event.target === $("#race-dialog")) $("#race-dialog").close();
+    });
+    render();
+  </script>
+</body>
+</html>
